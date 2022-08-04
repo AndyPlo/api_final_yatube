@@ -1,3 +1,4 @@
+from django.forms import ValidationError
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, filters
 from rest_framework.permissions import IsAuthenticated
@@ -51,17 +52,21 @@ class FollowViewSet(viewsets.ModelViewSet):
     serializer_class = FollowSerializer
     permission_classes = (IsAuthenticated,)
     filter_backends = (filters.SearchFilter,)
-    search_fields = ('user__username', 'author__username')
+    search_fields = ('user__username', 'following__username')
 
     def get_queryset(self):
         return Follow.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
-        author = get_object_or_404(
+        following = get_object_or_404(
             User,
-            username=serializer.validated_data['author']
+            username=serializer.validated_data['following']
         )
-        serializer.save(
-            user=self.request.user,
-            author=author
-        )
+        if serializer.is_valid():
+            print('---------------', serializer.is_valid())
+            serializer.save(
+                user=self.request.user,
+                following=following
+            )
+        else:
+            raise ValidationError
