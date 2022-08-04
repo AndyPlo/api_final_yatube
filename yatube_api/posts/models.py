@@ -15,13 +15,20 @@ class Group(models.Model):
 
 class Post(models.Model):
     text = models.TextField()
-    pub_date = models.DateTimeField('Дата публикации', auto_now_add=True)
+    pub_date = models.DateTimeField(
+        'Дата публикации',
+        auto_now_add=True
+    )
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         related_name='posts'
     )
-    image = models.ImageField(upload_to='posts/', null=True, blank=True)
+    image = models.ImageField(
+        upload_to='posts/',
+        null=True,
+        blank=True
+    )
     group = models.ForeignKey(
         Group,
         on_delete=models.SET_NULL,
@@ -47,32 +54,20 @@ class Comment(models.Model):
     )
     text = models.TextField()
     created = models.DateTimeField(
-        'Дата добавления', auto_now_add=True, db_index=True)
+        'Дата добавления',
+        auto_now_add=True,
+        db_index=True
+    )
 
 
 class Follow(models.Model):
     user = models.ForeignKey(
         User,
-        blank=True,
-        null=True,
         on_delete=models.CASCADE,
         related_name='users'
     )
     following = models.ForeignKey(
         User,
-        blank=True,
-        null=True,
         on_delete=models.CASCADE,
         related_name='following'
     )
-
-    # def __str__(self):
-    #     return f'{self.user.username} - {self.author.username}'
-
-    # class Meta:
-    #     constraints = [
-    #         models.UniqueConstraint(
-    #             fields=['user', 'following'],
-    #             name='unique_following'
-    #         )
-    #     ]

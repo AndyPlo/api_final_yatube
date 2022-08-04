@@ -1,7 +1,7 @@
-from rest_framework import serializers, validators
+from django.shortcuts import get_object_or_404
+from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField
-
-from posts.models import Comment, Post, Group, Follow
+from posts.models import Comment, Post, Group, Follow, User
 
 
 class GroupSerializer(serializers.ModelSerializer):
@@ -19,9 +19,7 @@ class PostSerializer(serializers.ModelSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
-    author = serializers.SlugRelatedField(
-        read_only=True, slug_field='username'
-    )
+    author = SlugRelatedField(slug_field='username', read_only=True)
 
     class Meta:
         fields = '__all__'
@@ -29,18 +27,33 @@ class CommentSerializer(serializers.ModelSerializer):
 
 
 class FollowSerializer(serializers.ModelSerializer):
-    user = serializers.SlugRelatedField(
-        read_only=True, slug_field='username',
-        default=serializers.CurrentUserDefault()
-    )
+    user = SlugRelatedField(slug_field='username', read_only=True,
+                            default=serializers.CurrentUserDefault())
     following = serializers.SlugField()
 
     class Meta:
         model = Follow
-        fields = '__all__'
-        validators = [
-            validators.UniqueTogetherValidator(
-                queryset=Follow.objects.all(),
-                fields=('user', 'following')
+        fields = ('user', 'following')
+
+    def validate(self, data):
+        following = get_object_or_404(User, username=data['following'])
+        if Follow.objects.filter(user=self.context['request'].user,
+                                 following=following).exists():
+            raise serializers.ValidationError(
+                'You have already followed this user!'
             )
-        ]
+        if self.context['request'].user == following:
+            raise serializers.ValidationError(
+                'You cannot follow youself!'
+            )
+        return data
+
+    def create(self, validated_data):
+        following = get_object_or_404(
+            User,
+            username=validated_data['following']
+        )
+        return Follow.objects.create(
+            user=self.context['request'].user,
+            following=following
+        )
