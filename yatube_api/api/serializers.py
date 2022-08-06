@@ -1,5 +1,5 @@
 from django.shortcuts import get_object_or_404
-from rest_framework import serializers
+from rest_framework import serializers, validators
 from rest_framework.relations import SlugRelatedField
 from posts.models import Comment, Post, Group, Follow, User
 
@@ -29,19 +29,21 @@ class CommentSerializer(serializers.ModelSerializer):
 class FollowSerializer(serializers.ModelSerializer):
     user = SlugRelatedField(slug_field='username', read_only=True,
                             default=serializers.CurrentUserDefault())
-    following = serializers.SlugField()
+    following = SlugRelatedField(slug_field='username',
+                                 queryset=User.objects.all())
 
     class Meta:
         model = Follow
         fields = ('user', 'following')
+        validators = [
+            validators.UniqueTogetherValidator(
+                queryset=Follow.objects.all(),
+                fields=('user', 'following')
+            )
+        ]
 
     def validate(self, data):
         following = get_object_or_404(User, username=data['following'])
-        if Follow.objects.filter(user=self.context['request'].user,
-                                 following=following).exists():
-            raise serializers.ValidationError(
-                'You have already followed this user!'
-            )
         if self.context['request'].user == following:
             raise serializers.ValidationError(
                 'You cannot follow youself!'
