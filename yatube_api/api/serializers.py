@@ -1,6 +1,6 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers, validators
-from rest_framework.relations import SlugRelatedField
+from rest_framework.relations import SlugRelatedField, PrimaryKeyRelatedField
 from posts.models import Comment, Post, Group, Follow, User
 
 
@@ -20,6 +20,7 @@ class PostSerializer(serializers.ModelSerializer):
 
 class CommentSerializer(serializers.ModelSerializer):
     author = SlugRelatedField(slug_field='username', read_only=True)
+    post = PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         fields = '__all__'
@@ -49,13 +50,3 @@ class FollowSerializer(serializers.ModelSerializer):
                 'You cannot follow youself!'
             )
         return data
-
-    def create(self, validated_data):
-        following = get_object_or_404(
-            User,
-            username=validated_data['following']
-        )
-        return Follow.objects.create(
-            user=self.context['request'].user,
-            following=following
-        )
